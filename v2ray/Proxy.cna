@@ -21,7 +21,7 @@ popup beacon_bottom {
         	$uuid_1 = [java.util.UUID randomUUID];
         	$uuid_2 = [java.util.UUID randomUUID];
         	$dialog = dialog("配置", %(uuid_1 => $uuid_1, uuid_2 => $uuid_2, vps_ip => "" , vps_port_1 => "34001", vps_port_2 => "28900" , vps_port_3 => "443", password => "pass000word", network => "tcp" , bid => $bid), &v2_profile);
-        	dialog_description($dialog, "生成V2ray配置，参考@亮哥@xinyu       选择\"TCP\"或\"UDP\"，修改VPS、端口、密码等信息\n注意：加密的uuid在每次生成配置时会重新随机生成");
+        	dialog_description($dialog, "生成V2ray配置，参考@不愿透露姓名的神秘人物@xinyu       选择\"TCP\"或\"UDP\"，修改VPS、端口、密码等信息\n注意：加密的uuid在每次生成配置时会重新随机生成");
         	drow_text($dialog, "uuid_1",  "uuid_1: ");
         	drow_text($dialog, "uuid_2",  "uuid_2: ");
         	drow_text($dialog, "vps_ip",  "vpsip: ");
